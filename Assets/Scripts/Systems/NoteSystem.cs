@@ -1,18 +1,28 @@
-using System.Collections;
+using Assets.Scripts.Http;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class NoteSystem : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
+	private readonly List<Note> notes = new();
+	private IHttpClient<Note> noteHttpClient;
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+	private void Awake()
+	{
+		noteHttpClient = new NoteHttpClient(new System.Net.Http.HttpClient());
+	}
+
+	public bool SyncNote(Note note)
+	{
+		var posted = noteHttpClient.Post(note);
+
+		if (posted == null)
+		{
+			return false;
+		}
+
+		notes.Add(note);
+		return true;
+	}
+
 }
