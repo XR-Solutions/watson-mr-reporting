@@ -15,7 +15,7 @@ public class NoteBehaviour : MonoBehaviour
 
 	private void SyncNote()
 	{
-		var note = new Note("", "", TraceTypes.None);
-		noteSystem.SyncNote(note);
+		var note = new Note("New Note", "This is the description", TraceTypes.None);
+		StartCoroutine(noteSystem.CreateNoteCoroutine(note));
 	}
 }

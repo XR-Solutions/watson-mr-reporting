@@ -1,10 +1,11 @@
 using Assets.Scripts.Models;
 
+[System.Serializable]
 public class Note
 {
-	public string Name { get; private set; }
-	public string Description { get; private set; }
-	public TraceTypes TraceType { get; private set; }
+	public string Name;
+	public string Description;
+	public TraceTypes TraceType;
 
 	public Note(string name, string description, TraceTypes traceType)
 	{

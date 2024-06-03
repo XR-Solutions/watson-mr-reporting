@@ -2,8 +2,9 @@
 
 namespace Assets.Scripts.Http
 {
-	internal interface IHttpClient<in T> where T : class
+	internal interface IHttpClient<T> where T : class
 	{
-		public IEnumerable Post(T Object);
+		public IEnumerator Post(T Object);
+		public T GetAll();
 	}
 }
