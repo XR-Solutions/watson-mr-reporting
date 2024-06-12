@@ -6,7 +6,7 @@ using UnityEngine.Networking;
 
 public class NoteSystem : MonoBehaviour
 {
-	private const string baseUrl = "https://localhost:58200/api/v1";
+	private const string baseUrl = "http://192.168.178.61/api/v1";
 	[SerializeField]
 	private GameObject PrefabToInstantiate;
 	private List<Note> Notes = new List<Note>();
@@ -31,6 +31,7 @@ public class NoteSystem : MonoBehaviour
 
 	public void GetAllNotesWrapper()
 	{
+		Debug.Log("Clearing all Notes");
 		ClearInstantiatedNotes();
 
 		StartCoroutine(GetAllNotes());
@@ -42,6 +43,7 @@ public class NoteSystem : MonoBehaviour
 		{
 			Destroy(instantiatedNote);
 		}
+		Notes.Clear();
 		InstantiatedNotes.Clear();
 	}
 
