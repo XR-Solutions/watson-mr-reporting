@@ -10,6 +10,7 @@ public class NoteSystem : MonoBehaviour
 	[SerializeField]
 	private GameObject PrefabToInstantiate;
 	private List<Note> Notes = new List<Note>();
+	private List<GameObject> InstantiatedNotes = new List<GameObject>();
 	private static bool awakeHasRun = false;
 	private static readonly object lockObject = new object();
 
@@ -26,6 +27,22 @@ public class NoteSystem : MonoBehaviour
 				awakeHasRun = true;
 			}
 		}
+	}
+
+	public void GetAllNotesWrapper()
+	{
+		ClearInstantiatedNotes();
+
+		StartCoroutine(GetAllNotes());
+	}
+
+	private void ClearInstantiatedNotes()
+	{
+		foreach (var instantiatedNote in InstantiatedNotes)
+		{
+			Destroy(instantiatedNote);
+		}
+		InstantiatedNotes.Clear();
 	}
 
 	public IEnumerator CreateNoteCoroutine(Note note, GameObject instantiatedObject)
@@ -109,6 +126,7 @@ public class NoteSystem : MonoBehaviour
 			foreach (var note in notes)
 			{
 				Debug.Log($"Name: {note.Name}, Description: {note.Description}, TraceType: {note.TraceType}, Position: x:{note.ObjectMetadata.Position[0]} y: {note.ObjectMetadata.Position[1]} z: {note.ObjectMetadata.Position[2]}");
+
 				Notes.Add(note);
 			}
 		}
@@ -122,6 +140,7 @@ public class NoteSystem : MonoBehaviour
 		foreach (var note in Notes)
 		{
 			GameObject instantiated = Instantiate(PrefabToInstantiate);
+			InstantiatedNotes.Add(instantiated);
 			var noteComponent = instantiated.GetComponent<NoteComponent>();
 
 			noteComponent.SetNoteData(note);
@@ -139,6 +158,12 @@ public class NoteSystem : MonoBehaviour
 		gameObject.transform.localScale = new Vector3(note.ObjectMetadata.Scale[0], note.ObjectMetadata.Scale[1], note.ObjectMetadata.Scale[2]);
 
 		gameObject.SetActive(note.ObjectMetadata.Enabled);
+
+		var noteBehaviour = gameObject.GetComponent<NoteBehaviour>();
+		if (noteBehaviour != null)
+		{
+			noteBehaviour.UpdateText(note.Name);
+		}
 	}
 	private List<Note> ConvertToUnityNotes(List<RawNote> rawNotes)
 	{

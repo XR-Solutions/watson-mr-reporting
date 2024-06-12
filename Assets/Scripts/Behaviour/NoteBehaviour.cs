@@ -1,6 +1,7 @@
 using Assets.Scripts.Models;
 using MixedReality.Toolkit.SpatialManipulation;
 using System;
+using TMPro;
 using UnityEngine;
 
 [RequireComponent(typeof(NoteSystem))]
@@ -12,12 +13,14 @@ public class NoteBehaviour : MonoBehaviour
 	private NoteComponent noteComponent;
 	private NoteSystem noteSystem;
 	private ObjectManipulator objectManipulator;
+	private TextMeshProUGUI textMeshPro;
 
 	private void Awake()
 	{
 		objectManipulator = GetComponent<ObjectManipulator>();
 		noteSystem = FindObjectOfType<NoteSystem>();
 		noteComponent = GetComponent<NoteComponent>();
+		textMeshPro = GetComponentInChildren<TextMeshProUGUI>();
 
 		if (noteSystem == null)
 		{
@@ -33,6 +36,7 @@ public class NoteBehaviour : MonoBehaviour
 		{
 			Debug.LogError("No NoteComponent found");
 		}
+
 	}
 
 	public void CreateNote()
@@ -72,6 +76,9 @@ public class NoteBehaviour : MonoBehaviour
 		var note = new Note(id, "New Note", "This is the description", TraceTypes.None, metadata);
 		newNoteComponent.SetNoteData(note);
 
+		// Update the text of the new instance's TextMeshPro
+		newNoteBehaviour.UpdateText("New Note");
+
 		// Start the coroutine on the new instance
 		newNoteBehaviour.StartCoroutine(newNoteBehaviour.noteSystem.CreateNoteCoroutine(note, newNoteObject));
 	}
@@ -94,5 +101,17 @@ public class NoteBehaviour : MonoBehaviour
 		noteComponent.SetNoteData(newNote);
 
 		StartCoroutine(noteSystem.UpdateNoteCoroutine(newNote, this.gameObject));
+	}
+
+	public void UpdateText(string newText)
+	{
+		if (textMeshPro != null)
+		{
+			textMeshPro.text = newText;
+		}
+		else
+		{
+			Debug.LogError("TextMeshPro component not found.");
+		}
 	}
 }
