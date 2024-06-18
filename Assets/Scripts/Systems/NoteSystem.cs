@@ -6,7 +6,7 @@ using UnityEngine.Networking;
 
 public class NoteSystem : MonoBehaviour
 {
-	private const string baseUrl = "http://192.168.178.61/api/v1";
+	private const string baseUrl = "https://localhost:54614/api/v1";
 	[SerializeField]
 	private GameObject PrefabToInstantiate;
 	private List<Note> Notes = new List<Note>();
@@ -74,6 +74,7 @@ public class NoteSystem : MonoBehaviour
 			Notes.Add(note);
 
 			InstantiateNote(instantiatedObject, note);
+
 		}
 	}
 

@@ -14,6 +14,7 @@ public class NoteBehaviour : MonoBehaviour
 	private NoteSystem noteSystem;
 	private ObjectManipulator objectManipulator;
 	private TextMeshProUGUI textMeshPro;
+	private ParentPosition parentPosition;
 
 	private void Awake()
 	{
@@ -21,6 +22,7 @@ public class NoteBehaviour : MonoBehaviour
 		noteSystem = FindObjectOfType<NoteSystem>();
 		noteComponent = GetComponent<NoteComponent>();
 		textMeshPro = GetComponentInChildren<TextMeshProUGUI>();
+		parentPosition = GetComponent<ParentPosition>();
 
 		if (noteSystem == null)
 		{
@@ -35,6 +37,11 @@ public class NoteBehaviour : MonoBehaviour
 		if (noteComponent == null)
 		{
 			Debug.LogError("No NoteComponent found");
+		}
+
+		if (parentPosition == null)
+		{
+			Debug.LogError("No ParentPosition found");
 		}
 
 	}
@@ -66,9 +73,18 @@ public class NoteBehaviour : MonoBehaviour
 		}
 
 		// Create metadata and a new note
+		ParentPosition newNoteParentPosition = newNoteObject.GetComponent<ParentPosition>();
+		if (newNoteParentPosition == null)
+		{
+			Debug.LogError("New instance does not have a ParentPosition.");
+			return;
+		}
 
-		float[] positionArray = new float[] { newNoteObject.transform.position.x, newNoteObject.transform.position.y, newNoteObject.transform.position.z };
-		float[] rotationArray = new float[] { newNoteObject.transform.rotation.x, newNoteObject.transform.rotation.y, newNoteObject.transform.rotation.z, newNoteObject.transform.rotation.w };
+		var position = newNoteParentPosition.GetParentSpawnPosition();
+		var rotation = newNoteParentPosition.GetParentRotation();
+
+		float[] positionArray = new float[] { position.x, position.y, position.z };
+		float[] rotationArray = new float[] { rotation.x, rotation.y, rotation.z, rotation.w };
 		float[] scaleArray = new float[] { newNoteObject.transform.lossyScale.x, newNoteObject.transform.lossyScale.y, newNoteObject.transform.lossyScale.z };
 
 		var metadata = new ObjectMetadata(positionArray, rotationArray, scaleArray, newNoteObject.activeSelf);
