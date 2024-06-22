@@ -47,7 +47,8 @@ public class NoteBehaviour : MonoBehaviour
 	}
 
 	public void CreateNote()
-	{        // Instantiate a new instance of this GameObject
+	{
+		// Instantiate a new instance of this GameObject
 		GameObject newNoteObject = Instantiate(gameObject);
 		newNoteObject.SetActive(true); // Ensure the new object is active
 
