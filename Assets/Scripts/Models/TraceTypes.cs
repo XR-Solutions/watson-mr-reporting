@@ -13,7 +13,7 @@
 		Seed = 8,
 		Paint = 9,
 		Drugs = 10,
-		Epithelium = 10,
+		Epithelium = 11,
 		GSR = 12,
 		Fingerprint = 13,
 		Palmprint = 14,

@@ -3,12 +3,13 @@ using Assets.Scripts.Models;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 
 public class NoteSystem : MonoBehaviour
 {
-	private const string baseUrl = "http://192.168.178.61:80/api/v1";
+	private const string baseUrl = "https://localhost:58200/api/v1";
 	[SerializeField]
 	private GameObject PrefabToInstantiate;
 	private List<Note> Notes = new List<Note>();
@@ -17,6 +18,7 @@ public class NoteSystem : MonoBehaviour
 	private static readonly object lockObject = new object();
 	[SerializeField]
 	public PdfPageDisplay pdfPageDisplay;
+	private int pdfPageNumber = 1;
 
 	private void Awake()
 	{
@@ -48,14 +50,34 @@ public class NoteSystem : MonoBehaviour
 		StartCoroutine(DownloadPdfCoroutine());
 	}
 
+	private void DestroyNotesWithComponent<T>() where T : Component
+	{
+		T[] notes = FindObjectsOfType<T>();
+
+		foreach (T note in notes)
+		{
+			Destroy(note.gameObject);
+		}
+	}
+
 	private void ClearInstantiatedNotes()
 	{
-		foreach (var instantiatedNote in InstantiatedNotes)
+		// Reverse iteration to safely remove items
+		for (int i = InstantiatedNotes.Count - 1; i >= 0; i--)
 		{
+			var instantiatedNote = InstantiatedNotes[i];
 			Destroy(instantiatedNote);
+			InstantiatedNotes.RemoveAt(i);
 		}
+
+		if (InstantiatedNotes.Any())
+		{
+			Debug.Log("Not all instantiate notes are deleted");
+		}
+
+		DestroyNotesWithComponent<NoteComponent>();
+
 		Notes.Clear();
-		InstantiatedNotes.Clear();
 	}
 
 	public IEnumerator CreateNoteCoroutine(Note note, GameObject instantiatedObject)
@@ -116,9 +138,27 @@ public class NoteSystem : MonoBehaviour
 		}
 	}
 
-	public void GetPdfPage(int pageNumber)
+	public void GetFirstPdfPage()
 	{
-		StartCoroutine(GetPdfPageCoroutine(pageNumber));
+		this.pdfPageNumber = 1;
+		StartCoroutine(GetPdfPageCoroutine(this.pdfPageNumber));
+	}
+	public void GetNextPdfPage()
+	{
+		this.pdfPageNumber++;
+		StartCoroutine(GetPdfPageCoroutine(this.pdfPageNumber));
+	}
+
+	public void GetPreviousPdfPage()
+	{
+		this.pdfPageNumber--;
+		StartCoroutine(GetPdfPageCoroutine(this.pdfPageNumber));
+	}
+
+
+	public void ReloadPdfPage()
+	{
+		StartCoroutine(GetPdfPageCoroutine(this.pdfPageNumber));
 	}
 
 	private IEnumerator GetPdfPageCoroutine(int pageNumber)
@@ -253,15 +293,32 @@ public class NoteSystem : MonoBehaviour
 		Quaternion rotation = new Quaternion(note.ObjectMetadata.Rotation[0], note.ObjectMetadata.Rotation[1], note.ObjectMetadata.Rotation[2], note.ObjectMetadata.Rotation[3]);
 		gameObject.transform.SetPositionAndRotation(position, rotation);
 
-		var parent = gameObject.transform.parent;
 		gameObject.transform.localScale = new Vector3(note.ObjectMetadata.Scale[0], note.ObjectMetadata.Scale[1], note.ObjectMetadata.Scale[2]);
-
 		gameObject.SetActive(note.ObjectMetadata.Enabled);
-
 		var noteBehaviour = gameObject.GetComponent<NoteBehaviour>();
 		if (noteBehaviour != null)
 		{
+			Debug.Log($"Setting name to {note.Name}");
 			noteBehaviour.UpdateText(note.Name);
+		}
+
+		// Get the renderer component of the GameObject (assuming it's a MeshRenderer)
+		var renderer = gameObject.GetComponent<Renderer>();
+		if (renderer != null && renderer.material != null)
+		{
+			// Set color based on TraceType
+			if (traceTypeColorMap.TryGetValue(note.TraceType, out Color traceTypeColor))
+			{
+				renderer.material.color = traceTypeColor;
+			}
+			else
+			{
+				Debug.LogWarning($"TraceType '{note.TraceType}' does not have a color mapping.");
+			}
+		}
+		else
+		{
+			Debug.LogWarning("Renderer or material not found on instantiated object.");
 		}
 	}
 	private List<Note> ConvertToUnityNotes(List<RawNote> rawNotes)
@@ -313,6 +370,32 @@ public class NoteSystem : MonoBehaviour
 		{
 			noteBehaviour.UpdateText(note.Name);
 		}
+
+		var noteComponent = instantiatedNote.GetComponent<NoteComponent>();
+		if (noteComponent != null)
+		{
+			noteComponent.Description = note.Description;
+		}
+
+		// Get the renderer component of the GameObject (assuming it's a MeshRenderer)
+		var renderer = gameObject.GetComponent<Renderer>();
+		if (renderer != null && renderer.material != null)
+		{
+			// Set color based on TraceType
+			if (traceTypeColorMap.TryGetValue(note.TraceType, out Color traceTypeColor))
+			{
+				renderer.material.color = traceTypeColor;
+			}
+			else
+			{
+				Debug.LogWarning($"TraceType '{note.TraceType}' does not have a color mapping.");
+			}
+		}
+		else
+		{
+			Debug.LogWarning("Renderer or material not found on instantiated object.");
+		}
+
 		Debug.Log($"Name: {note.Name}, Description: {note.Description}, TraceType: {note.TraceType}, Position: x:{note.ObjectMetadata.Position[0]} y: {note.ObjectMetadata.Position[1]} z: {note.ObjectMetadata.Position[2]}");
 	}
 
@@ -367,4 +450,25 @@ public class NoteSystem : MonoBehaviour
 		public float[] scale;
 		public bool enabled;
 	}
+
+	private static readonly Dictionary<TraceTypes, Color> traceTypeColorMap = new Dictionary<TraceTypes, Color>
+	{
+		{ TraceTypes.None, Color.gray },
+		{ TraceTypes.Bloodlike, Color.red },
+		{ TraceTypes.Blood, new Color(0.7f, 0, 0) }, // Dark red
+        { TraceTypes.Pattern, Color.blue },
+		{ TraceTypes.Hull, Color.green },
+		{ TraceTypes.Bullet, Color.cyan },
+		{ TraceTypes.Hair, new Color(0.78f, 0.6f, 0.4f) }, // Brown
+        { TraceTypes.Evidence, Color.yellow },
+		{ TraceTypes.Seed, new Color(0.8f, 0.5f, 0.2f) }, // Orange
+        { TraceTypes.Paint, Color.magenta },
+		{ TraceTypes.Drugs, new Color(0.5f, 0.2f, 0.8f) }, // Purple
+        { TraceTypes.Epithelium, new Color(1, 0.6f, 0.8f) }, // Light pink
+        { TraceTypes.GSR, new Color(0.1f, 0.8f, 0.1f) }, // Dark green
+        { TraceTypes.Fingerprint, new Color(0.9f, 0.9f, 0) }, // Yellow
+        { TraceTypes.Palmprint, new Color(1, 0.7f, 0.4f) }, // Light orange
+        { TraceTypes.Urine, new Color(0.6f, 0.4f, 0.2f) }, // Brown
+        { TraceTypes.Scratch, new Color(0.5f, 0.5f, 0.5f) } // Gray
+    };
 }

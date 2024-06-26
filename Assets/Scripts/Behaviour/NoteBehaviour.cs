@@ -98,6 +98,8 @@ public class NoteBehaviour : MonoBehaviour
 
 		// Start the coroutine on the new instance
 		newNoteBehaviour.StartCoroutine(newNoteBehaviour.noteSystem.CreateNoteCoroutine(note, newNoteObject));
+
+		//Destroy(gameObject);
 	}
 
 	public void TouchEnded()
@@ -124,6 +126,7 @@ public class NoteBehaviour : MonoBehaviour
 	{
 		if (textMeshPro != null)
 		{
+			this.noteComponent.Name = newText;
 			textMeshPro.text = newText;
 		}
 		else

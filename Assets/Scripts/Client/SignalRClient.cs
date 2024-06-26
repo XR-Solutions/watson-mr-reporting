@@ -21,8 +21,13 @@ namespace Assets.Scripts.Client
 
 			connection = new HubConnectionBuilder()
 				.WithUrl("http://192.168.178.61:80/noteshub")
-				.WithAutomaticReconnect(new[] { TimeSpan.Zero, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30) })
+				.WithAutomaticReconnect(new[] { TimeSpan.Zero, TimeSpan.FromMinutes(60) })
 				.Build();
+
+			connection.On<string>("Ping", state =>
+			{
+				Debug.Log($"Ping to keep connection alive: {state}");
+			});
 
 			connection.On<string>("ReceiveNoteUpdate", noteId =>
 			{
@@ -46,7 +51,6 @@ namespace Assets.Scripts.Client
 			{
 				Debug.LogError($"Connection closed due to: {error?.Message}");
 				await Task.Delay(TimeSpan.FromSeconds(10));
-				await StartConnectionAsync();
 			};
 
 			await StartConnectionAsync();
@@ -79,8 +83,13 @@ namespace Assets.Scripts.Client
 
 		async void OnApplicationQuit()
 		{
-			await connection.StopAsync();
-			await connection.DisposeAsync();
+			if (connection != null)
+			{
+				Debug.Log("Stopping SignalR connection...");
+				await connection.StopAsync();
+				await connection.DisposeAsync();
+				Debug.Log("SignalR connection stopped and disposed.");
+			}
 		}
 	}
 }
