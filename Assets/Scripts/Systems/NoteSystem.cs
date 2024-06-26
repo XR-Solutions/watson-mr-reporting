@@ -9,11 +9,11 @@ using UnityEngine.Networking;
 
 public class NoteSystem : MonoBehaviour
 {
-	private const string baseUrl = "https://localhost:58200/api/v1";
+	private const string baseUrl = "http://192.168.178.61:80/api/v1";
 	[SerializeField]
 	private GameObject PrefabToInstantiate;
-	private List<Note> Notes = new List<Note>();
-	private List<GameObject> InstantiatedNotes = new List<GameObject>();
+	public List<Note> Notes = new List<Note>();
+	public List<GameObject> InstantiatedNotes = new List<GameObject>();
 	private static bool awakeHasRun = false;
 	private static readonly object lockObject = new object();
 	[SerializeField]
@@ -77,6 +77,7 @@ public class NoteSystem : MonoBehaviour
 
 		DestroyNotesWithComponent<NoteComponent>();
 
+		InstantiatedNotes.Clear();
 		Notes.Clear();
 	}
 
@@ -101,10 +102,11 @@ public class NoteSystem : MonoBehaviour
 		}
 		else
 		{
-			Notes ??= new List<Note>();
+			//Notes ??= new List<Note>();
 
 			Debug.Log("Note created: " + request.downloadHandler.text);
 			Notes.Add(note);
+			InstantiatedNotes.Add(instantiatedObject);
 
 			InstantiateNote(instantiatedObject, note);
 
@@ -336,7 +338,7 @@ public class NoteSystem : MonoBehaviour
 	{
 		bool noteFound = false;
 
-		Debug.LogWarning($"Searching for note with Id '{newNote.Guid}' in list of size {Notes.Count}");
+		Debug.LogWarning($"Searching for note with Id '{newNote.Guid}' in list of notes with size {Notes.Count}");
 		for (int i = 0; i < Notes.Count; i++)
 		{
 			if (Notes[i].Guid == newNote.Guid)
@@ -348,8 +350,22 @@ public class NoteSystem : MonoBehaviour
 			}
 		}
 
+		Debug.LogWarning($"Searching for note with Id '{newNote.Guid}' in list of instantiated notes with size {InstantiatedNotes.Count}");
+		for (int i = 0; i < InstantiatedNotes.Count; i++)
+		{
+			var component = InstantiatedNotes[i].GetComponent<NoteComponent>();
+
+			if (component.Guid == newNote.Guid)
+			{
+				Debug.LogWarning($"Note not found in notes list but is instantiated, adding it.");
+				GetAllNotesWrapper();
+				break;
+			}
+		}
+
 		if (!noteFound)
 		{
+			GetAllNotesWrapper();
 			Debug.LogWarning($"Note with ID {newNote.Guid} does not exist and will not be added.");
 		}
 	}
@@ -357,43 +373,49 @@ public class NoteSystem : MonoBehaviour
 	private void UpdateInstantiatedNote(GameObject instantiatedNote, Note note)
 	{
 		Debug.LogWarning($"Found note with Id '{note.Guid}', updating it");
+
+		// Update position, rotation, and scale
 		Vector3 position = new Vector3(note.ObjectMetadata.Position[0], note.ObjectMetadata.Position[1], note.ObjectMetadata.Position[2]);
 		Quaternion rotation = new Quaternion(note.ObjectMetadata.Rotation[0], note.ObjectMetadata.Rotation[1], note.ObjectMetadata.Rotation[2], note.ObjectMetadata.Rotation[3]);
 		instantiatedNote.transform.SetPositionAndRotation(position, rotation);
-
 		instantiatedNote.transform.localScale = new Vector3(note.ObjectMetadata.Scale[0], note.ObjectMetadata.Scale[1], note.ObjectMetadata.Scale[2]);
-
 		instantiatedNote.SetActive(note.ObjectMetadata.Enabled);
 
+		// Update note text if the component exists
 		var noteBehaviour = instantiatedNote.GetComponent<NoteBehaviour>();
 		if (noteBehaviour != null)
 		{
 			noteBehaviour.UpdateText(note.Name);
 		}
 
+		// Update note description if the component exists
 		var noteComponent = instantiatedNote.GetComponent<NoteComponent>();
 		if (noteComponent != null)
 		{
 			noteComponent.Description = note.Description;
 		}
 
-		// Get the renderer component of the GameObject (assuming it's a MeshRenderer)
-		var renderer = gameObject.GetComponent<Renderer>();
-		if (renderer != null && renderer.material != null)
+		// Check if Renderer component exists; if not, add one
+		var renderer = instantiatedNote.GetComponent<Renderer>();
+		if (renderer == null)
 		{
-			// Set color based on TraceType
-			if (traceTypeColorMap.TryGetValue(note.TraceType, out Color traceTypeColor))
-			{
-				renderer.material.color = traceTypeColor;
-			}
-			else
-			{
-				Debug.LogWarning($"TraceType '{note.TraceType}' does not have a color mapping.");
-			}
+			renderer = instantiatedNote.AddComponent<MeshRenderer>();
+		}
+
+		// Check if material is assigned; if not, create and assign a default material
+		if (renderer.material == null)
+		{
+			renderer.material = new Material(Shader.Find("Standard"));
+		}
+
+		// Set color based on TraceType
+		if (traceTypeColorMap.TryGetValue(note.TraceType, out Color traceTypeColor))
+		{
+			renderer.material.color = traceTypeColor;
 		}
 		else
 		{
-			Debug.LogWarning("Renderer or material not found on instantiated object.");
+			Debug.LogWarning($"TraceType '{note.TraceType}' does not have a color mapping.");
 		}
 
 		Debug.Log($"Name: {note.Name}, Description: {note.Description}, TraceType: {note.TraceType}, Position: x:{note.ObjectMetadata.Position[0]} y: {note.ObjectMetadata.Position[1]} z: {note.ObjectMetadata.Position[2]}");

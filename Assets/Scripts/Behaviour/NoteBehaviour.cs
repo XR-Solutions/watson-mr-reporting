@@ -98,7 +98,8 @@ public class NoteBehaviour : MonoBehaviour
 
 		// Start the coroutine on the new instance
 		newNoteBehaviour.StartCoroutine(newNoteBehaviour.noteSystem.CreateNoteCoroutine(note, newNoteObject));
-
+		//newNoteBehaviour.noteSystem.Notes.Add(note);
+		//newNoteBehaviour.noteSystem.InstantiatedNotes.Add(newNoteObject);
 		//Destroy(gameObject);
 	}
 
