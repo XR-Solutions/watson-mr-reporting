@@ -20,6 +20,8 @@ public class NoteSystem : MonoBehaviour
 	public PdfPageDisplay pdfPageDisplay;
 	private int pdfPageNumber = 1;
 
+	public Vector3 QRCodePosition = Vector3.zero;
+
 	private void Awake()
 	{
 		lock (lockObject)
@@ -88,7 +90,7 @@ public class NoteSystem : MonoBehaviour
 
 		UnityWebRequest request = new UnityWebRequest(url, "POST");
 
-		Debug.Log($"Sending ${jsonData} to {url}");
+		Debug.Log($"Sending {jsonData} to {url}");
 		byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
 		request.uploadHandler = new UploadHandlerRaw(bodyRaw);
 		request.downloadHandler = new DownloadHandlerBuffer();
@@ -102,14 +104,11 @@ public class NoteSystem : MonoBehaviour
 		}
 		else
 		{
-			//Notes ??= new List<Note>();
-
 			Debug.Log("Note created: " + request.downloadHandler.text);
 			Notes.Add(note);
 			InstantiatedNotes.Add(instantiatedObject);
 
-			InstantiateNote(instantiatedObject, note);
-
+			InstantiateNoteWithOffset(instantiatedObject, note);
 		}
 	}
 
@@ -120,7 +119,7 @@ public class NoteSystem : MonoBehaviour
 
 		UnityWebRequest request = new UnityWebRequest(url, "PUT");
 
-		Debug.Log($"Sending ${jsonData} to {url}");
+		Debug.Log($"Sending {jsonData} to {url}");
 		byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
 		request.uploadHandler = new UploadHandlerRaw(bodyRaw);
 		request.downloadHandler = new DownloadHandlerBuffer();
@@ -136,7 +135,7 @@ public class NoteSystem : MonoBehaviour
 		{
 			Debug.Log("Note updated successfully");
 
-			InstantiateNote(noteGameObject, note);
+			InstantiateNoteWithOffset(noteGameObject, note);
 		}
 	}
 
@@ -182,6 +181,14 @@ public class NoteSystem : MonoBehaviour
 		}
 	}
 
+	private void InstantiateNoteWithOffset(GameObject gameObject, Note note)
+	{
+		Vector3 position = new Vector3(note.ObjectMetadata.Position[0], note.ObjectMetadata.Position[1], note.ObjectMetadata.Position[2]) + QRCodePosition;
+		Quaternion rotation = new Quaternion(note.ObjectMetadata.Rotation[0], note.ObjectMetadata.Rotation[1], note.ObjectMetadata.Rotation[2], note.ObjectMetadata.Rotation[3]);
+		gameObject.transform.SetPositionAndRotation(position, rotation);
+
+		gameObject.transform.localScale = new Vector3(note.ObjectMetadata.Scale[0], note.ObjectMetadata.Scale[1], note.ObjectMetadata.Scale[2]);
+	}
 
 	private IEnumerator GetAllNotesCoroutine()
 	{
@@ -215,7 +222,7 @@ public class NoteSystem : MonoBehaviour
 
 	public IEnumerator GetNoteByIdCoroutine(string noteId)
 	{
-		string url = $"{baseUrl}/Note/{noteId}"; // Modify URL based on your API endpoint
+		string url = $"{baseUrl}/Note/{noteId}";
 		UnityWebRequest request = UnityWebRequest.Get(url);
 
 		yield return request.SendWebRequest();
@@ -227,7 +234,7 @@ public class NoteSystem : MonoBehaviour
 		else
 		{
 			string jsonResponse = request.downloadHandler.text;
-			Debug.Log($"Response: {jsonResponse}"); // Log the raw JSON response
+			Debug.Log($"Response: {jsonResponse}");
 
 			ApiResponse<RawNote> response = JsonUtility.FromJson<ApiResponse<RawNote>>(jsonResponse);
 
@@ -285,7 +292,7 @@ public class NoteSystem : MonoBehaviour
 			var noteComponent = instantiated.GetComponent<NoteComponent>();
 
 			noteComponent.SetNoteData(note);
-			InstantiateNote(instantiated, note);
+			InstantiateNoteWithOffset(instantiated, note);
 		}
 	}
 
